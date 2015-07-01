@@ -163,8 +163,7 @@ public class JmxCollector implements AutoCloseable {
 
     String graphiteName(ObjectName name) {
 
-        StringBuilder builder = new StringBuilder(this.prefix).append('.').append(this.hostname).append('.')
-                .append(name.getDomain());
+        StringBuilder builder = new StringBuilder(this.prefix).append('.').append(name.getDomain());
 
         // Ideally we'd use getKeyPropertyList here, but that returns a map that
         // obscures the original ordering (which I assume/hope is stable), so
