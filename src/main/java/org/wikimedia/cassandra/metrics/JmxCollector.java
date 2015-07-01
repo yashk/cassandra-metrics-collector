@@ -168,7 +168,14 @@ public class JmxCollector implements AutoCloseable {
         // Ideally we'd use getKeyPropertyList here, but that returns a map that
         // obscures the original ordering (which I assume/hope is stable), so
         // we're forced to parse it ourselves here.
-        for (String property : Splitter.on(",").trimResults().split(name.getKeyPropertyListString())) {
+        
+        /* FIXME: you can actually hear this suck. */
+        String propertiesString = name.getKeyPropertyListString();
+        if (propertiesString.contains("type=ColumnFamily")) {
+            if (name.getKeyProperty("keyspace") == null)
+                propertiesString = propertiesString.replaceFirst("type=ColumnFamily", "type=ColumnFamily,keyspace=all");
+        }
+        for (String property : Splitter.on(",").trimResults().split(propertiesString)) {
             List<String> kv = Splitter.on("=").trimResults().limit(2).splitToList(property);
             builder.append('.').append(kv.get(1));
         }
