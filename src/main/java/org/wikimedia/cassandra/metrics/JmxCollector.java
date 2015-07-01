@@ -213,7 +213,7 @@ public class JmxCollector implements AutoCloseable {
         String type = objName.getKeyProperty("type");
         if (type != null && interestingTypes.contains(type)) {
             String keyspace = objName.getKeyProperty("keyspace");
-            if (keyspace == null || !keyspace.equals("system"))
+            if (keyspace == null || !keyspace.startsWith("system"))
                 return true;
         }
 
