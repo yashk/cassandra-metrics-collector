@@ -21,6 +21,7 @@ import javax.management.remote.JMXServiceURL;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
 import com.yammer.metrics.reporting.JmxReporter;
 
 public class JmxCollector implements AutoCloseable {
@@ -92,7 +93,7 @@ public class JmxCollector implements AutoCloseable {
     public void getSamples(SampleVisitor visitor) throws IOException {
 
         for (ObjectInstance instance : getConnection().queryMBeans(this.metricsObjectName, null)) {
-            if (blacklist.contains(instance.getObjectName()))
+            if (!interesting(instance.getObjectName()))
                 continue;
 
             Joiner joiner = Joiner.on(".");
@@ -147,6 +148,11 @@ public class JmxCollector implements AutoCloseable {
 
     }
 
+    @Override
+    public void close() throws IOException {
+        this.jmxc.close();
+    }
+
     MBeanServerConnection getConnection() {
         return this.mbeanServerConn;
     }
@@ -171,9 +177,34 @@ public class JmxCollector implements AutoCloseable {
         return builder.toString();
     }
 
-    @Override
-    public void close() throws IOException {
-        this.jmxc.close();
+    /* TODO: Ideally, the "interesting" criteria should be configurable. */
+    private static Set<String> interestingTypes = Sets.newHashSet(
+            "Cache",
+            "ClientRequest",
+            "ColumnFamily",
+            "Connection",
+            "CQL",
+            "DroppedMessage",
+            "FileCache",
+            "IndexColumnFamily",
+            "Storage",
+            "ThreadPools",
+            "Compaction",
+            "ReadRepair",
+            "CommitLog");
+
+    private boolean interesting(ObjectName objName) {
+        if (blacklist.contains(objName))
+            return false;
+        
+        String type = objName.getKeyProperty("type");
+        if (type != null && interestingTypes.contains(type)) {
+            String keyspace = objName.getKeyProperty("keyspace");
+            if (keyspace == null || !keyspace.equals("system"))
+                return true;
+        }
+
+        return false;
     }
 
     public static void main(String... args) throws IOException, Exception {
