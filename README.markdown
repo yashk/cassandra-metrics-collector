@@ -11,7 +11,8 @@ Run
             cassandra.host.net \
             7199 \
             graphite.host.net \
-            2003
+            2003 \
+            servers.cassandra.host
 
 Environment
 -----------

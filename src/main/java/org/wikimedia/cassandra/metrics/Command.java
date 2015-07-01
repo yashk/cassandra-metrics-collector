@@ -4,8 +4,8 @@ import java.io.IOException;
 
 public class Command {
     public static void main(String... args) throws IOException {
-        if (args.length != 4) {
-            System.err.printf("Usage: %s <jmx host> <jmx port> <graphite host> <graphite port>%n", Command.class.getSimpleName());
+        if (args.length != 5) {
+            System.err.printf("Usage: %s <jmx host> <jmx port> <graphite host> <graphite port> <prefix>%n", Command.class.getSimpleName());
             System.exit(1);
         }
 
@@ -27,7 +27,7 @@ public class Command {
             System.exit(1);
         }
 
-        try (JmxCollector collector = new JmxCollector(args[0], jmxPort, "cassandra")) {
+        try (JmxCollector collector = new JmxCollector(args[0], jmxPort, args[4])) {
             if (Boolean.parseBoolean(System.getenv().get("DRY_RUN"))) {
                 collector.getSamples(new SampleVisitor() {
                     @Override
