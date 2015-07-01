@@ -193,10 +193,17 @@ public class JmxCollector implements AutoCloseable {
             "ReadRepair",
             "CommitLog");
 
+    /* XXX: This is a hot mess. */
     private boolean interesting(ObjectName objName) {
         if (blacklist.contains(objName))
             return false;
-        
+
+        /* XXX: These metrics are gauges that return long[]; Pass for now... */
+        String name = objName.getKeyProperty("name");
+        if (name != null && (name.equals("EstimatedRowSizeHistogram") || name.equals("EstimatedColumnCountHistogram"))) {
+            return false;
+        }
+
         String type = objName.getKeyProperty("type");
         if (type != null && interestingTypes.contains(type)) {
             String keyspace = objName.getKeyProperty("keyspace");
