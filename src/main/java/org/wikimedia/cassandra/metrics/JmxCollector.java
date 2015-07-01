@@ -117,7 +117,7 @@ public class JmxCollector implements AutoCloseable {
                 visitor.visit(new Sample(joiner.join(name, "meanRate"), ((JmxReporter.TimerMBean) proxy).getMeanRate(), timestamp));
                 visitor.visit(new Sample(joiner.join(name, "min"), ((JmxReporter.TimerMBean) proxy).getMin(), timestamp));
                 visitor.visit(new Sample(joiner.join(name, "stddev"), ((JmxReporter.TimerMBean) proxy).getStdDev(), timestamp));
-                return;
+                continue;
             }
             
             if (proxy instanceof JmxReporter.HistogramMBean) {
@@ -131,17 +131,17 @@ public class JmxCollector implements AutoCloseable {
                 visitor.visit(new Sample(joiner.join(name, "mean"), ((JmxReporter.HistogramMBean) proxy).getMean(), timestamp));
                 visitor.visit(new Sample(joiner.join(name, "min"), ((JmxReporter.HistogramMBean) proxy).getMin(), timestamp));
                 visitor.visit(new Sample(joiner.join(name, "stddev"), ((JmxReporter.HistogramMBean) proxy).getStdDev(), timestamp));
-                return;
+                continue;
             }
 
             if (proxy instanceof JmxReporter.GaugeMBean) {
                 visitor.visit(new Sample(joiner.join(name, "value"), ((JmxReporter.GaugeMBean) proxy).getValue(), timestamp));
-                return;
+                continue;
             }
 
             if (proxy instanceof JmxReporter.CounterMBean) {
                 visitor.visit(new Sample(joiner.join(name, "count"), ((JmxReporter.CounterMBean) proxy).getCount(), timestamp));
-                return;
+                continue;
             }
         }
 

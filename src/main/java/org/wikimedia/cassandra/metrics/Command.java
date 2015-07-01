@@ -28,8 +28,18 @@ public class Command {
         }
 
         try (JmxCollector collector = new JmxCollector(args[0], jmxPort, "cassandra")) {
-            try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort)) {
-                collector.getSamples(visitor);
+            if (Boolean.parseBoolean(System.getenv().get("DRY_RUN"))) {
+                collector.getSamples(new SampleVisitor() {
+                    @Override
+                    public void visit(Sample sample) {
+                        System.out.printf("%s %s %s%n", sample.getName(), sample.getValue(), sample.getTimestamp());
+                    }
+                });
+            }
+            else {
+                try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort)) {
+                    collector.getSamples(visitor);
+                }
             }
         }
 
