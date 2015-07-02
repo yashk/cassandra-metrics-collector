@@ -38,7 +38,7 @@ public class Command {
             }
             else {
                 try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort)) {
-                    collector.getSamples(visitor);
+                    collector.getCassandraSamples(visitor);
                 }
             }
         }
