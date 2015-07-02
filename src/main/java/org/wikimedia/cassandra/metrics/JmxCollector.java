@@ -48,6 +48,7 @@ public class JmxCollector implements AutoCloseable {
         mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Counter", JmxReporter.CounterMBean.class);
         mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Meter", JmxReporter.MeterMBean.class);
         mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Histogram", JmxReporter.HistogramMBean.class);
+        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Meter", JmxReporter.MeterMBean.class);
 
         blacklist = new HashSet<ObjectName>();
         blacklist.add(newObjectName("org.apache.cassandra.metrics:type=ColumnFamily,name=SnapshotsSize"));
@@ -134,6 +135,14 @@ public class JmxCollector implements AutoCloseable {
 
             String name = graphiteName(instance.getObjectName());
             int timestamp = (int) (System.currentTimeMillis() / 1000);
+
+            if (proxy instanceof JmxReporter.MeterMBean) {
+                visitor.visit(new Sample(joiner.join(name, "15MinuteRate"), ((JmxReporter.MeterMBean) proxy).getFifteenMinuteRate(), timestamp));
+                visitor.visit(new Sample(joiner.join(name, "1MinuteRate"), ((JmxReporter.MeterMBean) proxy).getOneMinuteRate(), timestamp));
+                visitor.visit(new Sample(joiner.join(name, "5MinuteRate"), ((JmxReporter.MeterMBean) proxy).getFiveMinuteRate(), timestamp));
+                visitor.visit(new Sample(joiner.join(name, "count"), ((JmxReporter.MeterMBean) proxy).getCount(), timestamp));
+                visitor.visit(new Sample(joiner.join(name, "meanRate"), ((JmxReporter.MeterMBean) proxy).getMeanRate(), timestamp));
+            }
 
             if (proxy instanceof JmxReporter.TimerMBean) {
                 visitor.visit(new Sample(joiner.join(name, "50percentile"), ((JmxReporter.TimerMBean) proxy).get50thPercentile(), timestamp));
@@ -279,10 +288,10 @@ public class JmxCollector implements AutoCloseable {
             SampleVisitor visitor = new SampleVisitor() {
                 @Override
                 public void visit(Sample sample) {
-                    System.out.printf("%s=%s%n", sample.getName(), sample.getValue());
+                    System.err.printf("%s=%s%n", sample.getName(), sample.getValue());
                 }
             };
-            collector.getJvmSamples(visitor);
+            collector.getSamples(visitor);
         }
 
     }
