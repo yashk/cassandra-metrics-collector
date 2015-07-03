@@ -6,7 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.management.ObjectName;
 
 
-public class Sample {
+public class JmxSample {
 
     public static enum Type {
         JVM, CASSANDRA;
@@ -18,7 +18,7 @@ public class Sample {
     private final Object value;
     private final Number timestamp;
 
-    public Sample(Type type, ObjectName oName, String metricName, Object value, Number timestamp) {
+    public JmxSample(Type type, ObjectName oName, String metricName, Object value, Number timestamp) {
         this.type = checkNotNull(type, "type argument");
         this.objectName = checkNotNull(oName, "objectName argument");
         this.name = checkNotNull(metricName, "name argument");
@@ -44,6 +44,21 @@ public class Sample {
 
     public Number getTimestamp() {
         return this.timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "JmxSample [type="
+                + type
+                + ", objectName="
+                + objectName
+                + ", name="
+                + name
+                + ", value="
+                + value
+                + ", timestamp="
+                + timestamp
+                + "]";
     }
 
 }

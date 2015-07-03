@@ -6,6 +6,11 @@ import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_PREFIX;
 import java.io.PrintStream;
 
 
+/**
+ * Sample visitor that writes tab-seperated output to a {@link PrintStream}.
+ * 
+ * @author eevans
+ */
 public class TsvVisitor implements SampleVisitor {
 
     private final PrintStream stream;
@@ -20,13 +25,14 @@ public class TsvVisitor implements SampleVisitor {
         this.prefix = prefix;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void visit(Sample sample) {
+    public void visit(JmxSample jmxSample) {
         this.stream.printf(
                 "%s %s %s%n",
-                GraphiteVisitor.metricName(sample, this.prefix),
-                sample.getValue(),
-                sample.getTimestamp());
+                GraphiteVisitor.metricName(jmxSample, this.prefix),
+                jmxSample.getValue(),
+                jmxSample.getTimestamp());
     }
 
 }

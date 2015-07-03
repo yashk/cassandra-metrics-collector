@@ -29,7 +29,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.wikimedia.cassandra.metrics.Sample.Type;
+import org.wikimedia.cassandra.metrics.JmxSample.Type;
 
 import com.google.common.collect.Sets;
 import com.yammer.metrics.reporting.JmxReporter;
@@ -64,7 +64,11 @@ public class JmxCollector implements AutoCloseable {
     private final ObjectName metricsObjectName;
 
     public JmxCollector() throws IOException {
-        this(DEFAULT_JMX_HOST, DEFAULT_JMX_PORT);
+        this(DEFAULT_JMX_HOST);
+    }
+
+    public JmxCollector(String host) throws IOException {
+        this(host, DEFAULT_JMX_PORT);
     }
 
     public JmxCollector(String host, int port) throws IOException {
@@ -97,27 +101,27 @@ public class JmxCollector implements AutoCloseable {
 
         // Runtime
         RuntimeMXBean runtime = ManagementFactory.newPlatformMXBeanProxy(getConnection(), RUNTIME_MXBEAN_NAME, RuntimeMXBean.class);
-        visitor.visit(new Sample(Type.JVM, newObjectName(RUNTIME_MXBEAN_NAME), "uptime", runtime.getUptime(), timestamp));
+        visitor.visit(new JmxSample(Type.JVM, newObjectName(RUNTIME_MXBEAN_NAME), "uptime", runtime.getUptime(), timestamp));
 
         // Memory
         MemoryMXBean memory = ManagementFactory.newPlatformMXBeanProxy(getConnection(), MEMORY_MXBEAN_NAME, MemoryMXBean.class);
         ObjectName oName = newObjectName(MEMORY_MXBEAN_NAME);
-        visitor.visit(new Sample(Type.JVM, oName, "non_heap_usage", memory.getNonHeapMemoryUsage().getUsed(), timestamp));
-        visitor.visit(new Sample(Type.JVM, oName, "heap_usage", memory.getHeapMemoryUsage().getUsed(), timestamp));
+        visitor.visit(new JmxSample(Type.JVM, oName, "non_heap_usage", memory.getNonHeapMemoryUsage().getUsed(), timestamp));
+        visitor.visit(new JmxSample(Type.JVM, oName, "heap_usage", memory.getHeapMemoryUsage().getUsed(), timestamp));
 
         // Garbage collection
         for (ObjectInstance instance : getConnection().queryMBeans(newObjectName("java.lang:type=GarbageCollector,name=*"), null)) {
             String name = instance.getObjectName().getKeyProperty("name");
             GarbageCollectorMXBean gc = newPlatformMXBeanProxy(GARBAGE_COLLECTOR_MXBEAN_DOMAIN_TYPE, "name", name, GarbageCollectorMXBean.class);
-            visitor.visit(new Sample(Type.JVM, instance.getObjectName(), "runs", gc.getCollectionCount(), timestamp));
-            visitor.visit(new Sample(Type.JVM, instance.getObjectName(), "time", gc.getCollectionTime(), timestamp));
+            visitor.visit(new JmxSample(Type.JVM, instance.getObjectName(), "runs", gc.getCollectionCount(), timestamp));
+            visitor.visit(new JmxSample(Type.JVM, instance.getObjectName(), "time", gc.getCollectionTime(), timestamp));
         }
 
         // Memory pool usages
         for (ObjectInstance instance : getConnection().queryMBeans(newObjectName("java.lang:type=MemoryPool,name=*"), null)) {
             String name = instance.getObjectName().getKeyProperty("name");
             MemoryPoolMXBean memPool = newPlatformMXBeanProxy(MEMORY_POOL_MXBEAN_DOMAIN_TYPE, "name", name, MemoryPoolMXBean.class);
-            visitor.visit(new Sample(Type.JVM, instance.getObjectName(), memPool.getName(), memPool.getUsage().getUsed(), timestamp));
+            visitor.visit(new JmxSample(Type.JVM, instance.getObjectName(), memPool.getName(), memPool.getUsage().getUsed(), timestamp));
         }
 
     }
@@ -130,57 +134,72 @@ public class JmxCollector implements AutoCloseable {
                 continue;
 
             Object proxy = getMBeanProxy(instance);
+            ObjectName oName = instance.getObjectName();
 
             int timestamp = (int) (System.currentTimeMillis() / 1000);
 
             if (proxy instanceof JmxReporter.MeterMBean) {
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "15MinuteRate", ((JmxReporter.MeterMBean) proxy).getFifteenMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "1MinuteRate", ((JmxReporter.MeterMBean) proxy).getOneMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "5MinuteRate", ((JmxReporter.MeterMBean) proxy).getFiveMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "count", ((JmxReporter.MeterMBean) proxy).getCount(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "meanRate", ((JmxReporter.MeterMBean) proxy).getMeanRate(), timestamp));
+                JmxReporter.MeterMBean meter = (JmxReporter.MeterMBean)proxy;
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "15MinuteRate", meter.getFifteenMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "1MinuteRate", meter.getOneMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "5MinuteRate", meter.getFiveMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "count", meter.getCount(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "meanRate", meter.getMeanRate(), timestamp));
+                continue;
             }
 
             if (proxy instanceof JmxReporter.TimerMBean) {
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "50percentile", ((JmxReporter.TimerMBean) proxy).get50thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "75percentile", ((JmxReporter.TimerMBean) proxy).get75thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "95percentile", ((JmxReporter.TimerMBean) proxy).get95thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "98percentile", ((JmxReporter.TimerMBean) proxy).get98thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "99percentile", ((JmxReporter.TimerMBean) proxy).get99thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "999percentile", ((JmxReporter.TimerMBean) proxy).get999thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "1MinuteRate", ((JmxReporter.TimerMBean) proxy).getOneMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "5MinuteRate", ((JmxReporter.TimerMBean) proxy).getFiveMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "15MinuteRate", ((JmxReporter.TimerMBean) proxy).getFifteenMinuteRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "count", ((JmxReporter.TimerMBean) proxy).getCount(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "max", ((JmxReporter.TimerMBean) proxy).getMax(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "mean", ((JmxReporter.TimerMBean) proxy).getMean(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "meanRate", ((JmxReporter.TimerMBean) proxy).getMeanRate(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "min", ((JmxReporter.TimerMBean) proxy).getMin(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "stddev", ((JmxReporter.TimerMBean) proxy).getStdDev(), timestamp));
+                JmxReporter.TimerMBean timer = (JmxReporter.TimerMBean)proxy;
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", timer.get50thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", timer.get75thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "95percentile", timer.get95thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "98percentile", timer.get98thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "99percentile", timer.get99thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "999percentile", timer.get999thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "1MinuteRate", timer.getOneMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "5MinuteRate", timer.getFiveMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "15MinuteRate", timer.getFifteenMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "count", timer.getCount(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "max", timer.getMax(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "mean", timer.getMean(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "meanRate", timer.getMeanRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "min", timer.getMin(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "stddev", timer.getStdDev(), timestamp));
                 continue;
             }
             
             if (proxy instanceof JmxReporter.HistogramMBean) {
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "50percentile", ((JmxReporter.HistogramMBean) proxy).get50thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "75percentile", ((JmxReporter.HistogramMBean) proxy).get75thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "95percentile", ((JmxReporter.HistogramMBean) proxy).get95thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "98percentile", ((JmxReporter.HistogramMBean) proxy).get98thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "99percentile", ((JmxReporter.HistogramMBean) proxy).get99thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "999percentile", ((JmxReporter.HistogramMBean) proxy).get999thPercentile(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "max", ((JmxReporter.HistogramMBean) proxy).getMax(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "mean", ((JmxReporter.HistogramMBean) proxy).getMean(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "min", ((JmxReporter.HistogramMBean) proxy).getMin(), timestamp));
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "stddev", ((JmxReporter.HistogramMBean) proxy).getStdDev(), timestamp));
+                JmxReporter.HistogramMBean histogram = (JmxReporter.HistogramMBean)proxy;
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", histogram.get50thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", histogram.get75thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "95percentile", histogram.get95thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "98percentile", histogram.get98thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "99percentile", histogram.get99thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "999percentile", histogram.get999thPercentile(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "max", histogram.getMax(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "mean", histogram.getMean(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "min", histogram.getMin(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "stddev", histogram.getStdDev(), timestamp));
                 continue;
             }
 
             if (proxy instanceof JmxReporter.GaugeMBean) {
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "value", ((JmxReporter.GaugeMBean) proxy).getValue(), timestamp));
+                visitor.visit(new JmxSample(
+                        Type.CASSANDRA,
+                        oName,
+                        "value",
+                        ((JmxReporter.GaugeMBean) proxy).getValue(),
+                        timestamp));
                 continue;
             }
 
             if (proxy instanceof JmxReporter.CounterMBean) {
-                visitor.visit(new Sample(Type.CASSANDRA, instance.getObjectName(), "count", ((JmxReporter.CounterMBean) proxy).getCount(), timestamp));
+                visitor.visit(new JmxSample(
+                        Type.CASSANDRA,
+                        oName,
+                        "count",
+                        ((JmxReporter.CounterMBean) proxy).getCount(),
+                        timestamp));
                 continue;
             }
         }
@@ -190,6 +209,21 @@ public class JmxCollector implements AutoCloseable {
     @Override
     public void close() throws IOException {
         this.jmxc.close();
+    }
+
+    @Override
+    public String toString() {
+        return "JmxCollector [hostname="
+                + hostname
+                + ", port="
+                + port
+                + ", jmxc="
+                + jmxc
+                + ", mbeanServerConn="
+                + mbeanServerConn
+                + ", metricsObjectName="
+                + metricsObjectName
+                + "]";
     }
 
     MBeanServerConnection getConnection() {
@@ -262,8 +296,8 @@ public class JmxCollector implements AutoCloseable {
         try (JmxCollector collector = new JmxCollector("localhost", 7100)) {
             SampleVisitor visitor = new SampleVisitor() {
                 @Override
-                public void visit(Sample sample) {
-                    System.err.printf("%s,%s=%s%n", sample.getObjectName(), sample.getMetricName(), sample.getValue());
+                public void visit(JmxSample jmxSample) {
+                    System.err.printf("%s,%s=%s%n", jmxSample.getObjectName(), jmxSample.getMetricName(), jmxSample.getValue());
                 }
             };
             collector.getSamples(visitor);
