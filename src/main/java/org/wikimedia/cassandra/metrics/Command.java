@@ -27,17 +27,12 @@ public class Command {
             System.exit(1);
         }
 
-        try (JmxCollector collector = new JmxCollector(args[0], jmxPort, args[4])) {
+        try (JmxCollector collector = new JmxCollector(args[0], jmxPort)) {
             if (Boolean.parseBoolean(System.getenv().get("DRY_RUN"))) {
-                collector.getSamples(new SampleVisitor() {
-                    @Override
-                    public void visit(Sample sample) {
-                        System.out.printf("%s %s %s%n", sample.getName(), sample.getValue(), sample.getTimestamp());
-                    }
-                });
+                collector.getSamples(new TsvVisitor(System.out, args[4]));
             }
             else {
-                try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort)) {
+                try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort, args[4])) {
                     collector.getCassandraSamples(visitor);
                 }
             }
