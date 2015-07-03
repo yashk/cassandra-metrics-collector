@@ -70,4 +70,17 @@
     </dependency>
   </dependencies>
 
+  <distributionManagement>
+    <repository>
+      <id>wikimedia.releases</id>
+      <name>Wikimedia Release Repository</name>
+      <url>https://archiva.wikimedia.org/repository/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>wikimedia.snapshots</id>
+      <name>Wikimedia Snapshot Repository</name>
+      <url>https://archiva.wikimedia.org/repository/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
 </project>
