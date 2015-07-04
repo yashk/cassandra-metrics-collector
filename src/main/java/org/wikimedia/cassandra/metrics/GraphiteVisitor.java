@@ -194,10 +194,10 @@ public class GraphiteVisitor implements SampleVisitor, AutoCloseable {
         // Add the remaining properties in the order they were defined.
         for (String property : Splitter.on(",").trimResults().split(propsString)) {
             List<String> kv = Splitter.on("=").trimResults().limit(2).splitToList(property);
-            builder.append('.').append(kv.get(1));
+            builder.append('.').append(scrub(kv.get(1)));
         }
 
-        builder.append('.').append(jmxSample.getMetricName());
+        builder.append('.').append(scrub(jmxSample.getMetricName()));
 
         return builder.toString();
     }
