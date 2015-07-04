@@ -1,6 +1,9 @@
 cassandra-metrics-collector
 ===========================
 
+Collects Cassandra performance metrics (via JMX) and writes them to Graphite in a
+format compatible with the Dropwizard metrics GraphiteReporter.
+
 Build
 -----
     $ mvn package
