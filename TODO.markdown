@@ -17,3 +17,4 @@
 * multiple jmx sources
 * multiple sinks
 * tests
+* support jmx auth, encryption
