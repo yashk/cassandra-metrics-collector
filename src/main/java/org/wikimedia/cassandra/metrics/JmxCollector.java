@@ -140,15 +140,7 @@ public class JmxCollector implements AutoCloseable {
 
             int timestamp = (int) (System.currentTimeMillis() / 1000);
 
-            if (proxy instanceof JmxReporter.MeterMBean) {
-                JmxReporter.MeterMBean meter = (JmxReporter.MeterMBean)proxy;
-                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "15MinuteRate", meter.getFifteenMinuteRate(), timestamp));
-                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "1MinuteRate", meter.getOneMinuteRate(), timestamp));
-                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "5MinuteRate", meter.getFiveMinuteRate(), timestamp));
-                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "count", meter.getCount(), timestamp));
-                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "meanRate", meter.getMeanRate(), timestamp));
-                continue;
-            }
+            // Order matters here (for example: TimerMBean extends MeterMBean)
 
             if (proxy instanceof JmxReporter.TimerMBean) {
                 JmxReporter.TimerMBean timer = (JmxReporter.TimerMBean)proxy;
@@ -169,7 +161,17 @@ public class JmxCollector implements AutoCloseable {
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "stddev", timer.getStdDev(), timestamp));
                 continue;
             }
-            
+
+            if (proxy instanceof JmxReporter.MeterMBean) {
+                JmxReporter.MeterMBean meter = (JmxReporter.MeterMBean)proxy;
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "15MinuteRate", meter.getFifteenMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "1MinuteRate", meter.getOneMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "5MinuteRate", meter.getFiveMinuteRate(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "count", meter.getCount(), timestamp));
+                visitor.visit(new JmxSample(Type.CASSANDRA, oName, "meanRate", meter.getMeanRate(), timestamp));
+                continue;
+            }
+
             if (proxy instanceof JmxReporter.HistogramMBean) {
                 JmxReporter.HistogramMBean histogram = (JmxReporter.HistogramMBean)proxy;
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", histogram.get50thPercentile(), timestamp));
@@ -299,7 +301,8 @@ public class JmxCollector implements AutoCloseable {
             SampleVisitor visitor = new SampleVisitor() {
                 @Override
                 public void visit(JmxSample jmxSample) {
-                    System.err.printf("%s,%s=%s%n", jmxSample.getObjectName(), jmxSample.getMetricName(), jmxSample.getValue());
+                    if (jmxSample.getObjectName().getKeyProperty("type").equals("ColumnFamily"))
+                        System.err.printf("%s,%s=%s%n", jmxSample.getObjectName(), jmxSample.getMetricName(), jmxSample.getValue());
                 }
             };
             collector.getSamples(visitor);
