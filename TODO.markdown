@@ -10,7 +10,6 @@
   * jvm.daemon_thread_count
   * jvm.fd_usage
   * jvm.thread_count
-* licensing
 * daemon mode
 * configuration with file (yaml)
   * excludes/includes
