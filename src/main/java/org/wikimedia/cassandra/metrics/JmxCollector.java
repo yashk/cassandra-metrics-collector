@@ -30,6 +30,7 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.MalformedURLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -203,12 +204,29 @@ public class JmxCollector implements AutoCloseable {
             }
 
             if (proxy instanceof JmxReporter.GaugeMBean) {
-                visitor.visit(new JmxSample(
-                        Type.CASSANDRA,
-                        oName,
-                        "value",
-                        ((JmxReporter.GaugeMBean) proxy).getValue(),
-                        timestamp));
+                // EstimatedRowSizeHistogram and EstimatedColumnCountHistogram are allegedly Gauge, but with a value
+                // of type of long[], we're left with little choice but to special-case them.  This borrows code from
+                // Cassandra to decode the array into a histogram (50p, 75p, 95p, 98p, 99p, min, and max).
+                String name = oName.getKeyProperty("name");
+                if (name.equals("EstimatedRowSizeHistogram") || name.equals("EstimatedColumnCountHistogram")) {
+                    Object value = ((JmxReporter.GaugeMBean) proxy).getValue();
+                    double[] percentiles = metricPercentilesAsArray((long[])value);
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", percentiles[0], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", percentiles[1], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "95percentile", percentiles[2], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "98percentile", percentiles[3], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "99percentile", percentiles[4], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "min", percentiles[5], timestamp));
+                    visitor.visit(new JmxSample(Type.CASSANDRA, oName, "max", percentiles[6], timestamp));
+                }
+                else {
+                    visitor.visit(new JmxSample(
+                            Type.CASSANDRA,
+                            oName,
+                            "value",
+                            ((JmxReporter.GaugeMBean) proxy).getValue(),
+                            timestamp));
+                }
                 continue;
             }
 
@@ -274,12 +292,6 @@ public class JmxCollector implements AutoCloseable {
         if (blacklist.contains(objName))
             return false;
 
-        /* XXX: These metrics are gauges that return long[]; Pass for now... */
-        String name = objName.getKeyProperty("name");
-        if (name != null && (name.equals("EstimatedRowSizeHistogram") || name.equals("EstimatedColumnCountHistogram"))) {
-            return false;
-        }
-
         String type = objName.getKeyProperty("type");
         if (type != null && interestingTypes.contains(type)) {
             String keyspace = objName.getKeyProperty("keyspace");
@@ -308,6 +320,38 @@ public class JmxCollector implements AutoCloseable {
         catch (MalformedObjectNameException e) {
             throw new RuntimeException("a bug!", e);
         }
+    }
+
+    // Copy-pasta from o.a.cassandra.tools.NodeProbe
+    private double[] metricPercentilesAsArray(long[] counts)
+    {
+        double[] result = new double[7];
+
+        if (counts == null || counts.length == 0)
+        {
+            Arrays.fill(result, Double.NaN);
+            return result;
+        }
+
+        double[] offsetPercentiles = new double[] { 0.5, 0.75, 0.95, 0.98, 0.99 };
+        long[] offsets = new EstimatedHistogram(counts.length).getBucketOffsets();
+        EstimatedHistogram metric = new EstimatedHistogram(offsets, counts);
+
+        if (metric.isOverflowed())
+        {
+            System.err.println(String.format("EstimatedHistogram overflowed larger than %s, unable to calculate percentiles",
+                                             offsets[offsets.length - 1]));
+            for (int i = 0; i < result.length; i++)
+                result[i] = Double.NaN;
+        }
+        else
+        {
+            for (int i = 0; i < offsetPercentiles.length; i++)
+                result[i] = metric.percentile(offsetPercentiles[i]);
+        }
+        result[5] = metric.min();
+        result[6] = metric.max();
+        return result;
     }
 
     public static void main(String... args) throws IOException, Exception {
