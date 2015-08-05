@@ -1,0 +1,9 @@
+Cassandra Metrics Collector
+Copyright 2015 Eric Evans, The Wikimedia Foundation
+
+This product includes software developed by The Apache Software
+Foundation (http://www.apache.org/).
+
+Calculation of row and column size histograms provided by Apache Cassandra
+from http://cassandra.apache.org.
+Copyright 2009-2015 The Apache Software Foundation
