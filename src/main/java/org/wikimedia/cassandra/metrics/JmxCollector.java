@@ -122,8 +122,8 @@ public class JmxCollector implements AutoCloseable {
         // Memory
         MemoryMXBean memory = ManagementFactory.newPlatformMXBeanProxy(getConnection(), MEMORY_MXBEAN_NAME, MemoryMXBean.class);
         ObjectName oName = newObjectName(MEMORY_MXBEAN_NAME);
-        double nonHeapUsed = ((double)memory.getNonHeapMemoryUsage().getUsed() / (double)memory.getNonHeapMemoryUsage().getMax());
-        double heapUsed = ((double)memory.getHeapMemoryUsage().getUsed() / (double)memory.getHeapMemoryUsage().getMax());
+        double nonHeapUsed = ((double)memory.getNonHeapMemoryUsage().getUsed() / (double)memory.getNonHeapMemoryUsage().getCommitted());
+        double heapUsed = ((double)memory.getHeapMemoryUsage().getUsed() / (double)memory.getHeapMemoryUsage().getCommitted());
         visitor.visit(new JmxSample(Type.JVM, oName, "non_heap_usage", nonHeapUsed, timestamp));
         visitor.visit(new JmxSample(Type.JVM, oName, "heap_usage", heapUsed, timestamp));
 
