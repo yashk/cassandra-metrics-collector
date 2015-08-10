@@ -125,6 +125,7 @@ public class JmxCollector implements AutoCloseable {
         double nonHeapUsed = ((double)memory.getNonHeapMemoryUsage().getUsed() / (double)memory.getNonHeapMemoryUsage().getCommitted());
         double heapUsed = ((double)memory.getHeapMemoryUsage().getUsed() / (double)memory.getHeapMemoryUsage().getCommitted());
         visitor.visit(new JmxSample(Type.JVM, oName, "non_heap_usage", nonHeapUsed, timestamp));
+        visitor.visit(new JmxSample(Type.JVM, oName, "non_heap_usage_bytes", (double)memory.getNonHeapMemoryUsage().getUsed(), timestamp));
         visitor.visit(new JmxSample(Type.JVM, oName, "heap_usage", heapUsed, timestamp));
 
         // Garbage collection
