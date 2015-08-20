@@ -1,0 +1,33 @@
+#!/bin/sh
+
+panic()
+{
+    echo "Error: $1" >&2
+    exit 1
+}
+
+get_java()
+{
+    java=`which java` || panic "java binary not found in path"
+    realpath "$java"
+}
+
+JAVA=`get_java`
+
+# Search for the tools jar relative to where the java binary is (it's very
+# likely this search list needs to be expanded).
+for jar in "`dirname $JAVA`/../lib/tools.jar" "`dirname $JAVA`/../../lib/tools.jar"; do
+    if [ -r "$jar" ]; then
+        TOOLS="$jar"
+        break
+    fi
+done
+
+if [ -z "$TOOLS" ]; then
+    panic "unable to locate tools.jar (hint: do you have a JDK installed?)"
+fi
+
+EXECJAR="$1"
+shift 1
+
+$JAVA -cp "$TOOLS":"$EXECJAR" org.wikimedia.cassandra.metrics.DiscoverCommand "$@"
