@@ -44,7 +44,7 @@ public class GraphiteMetricNamesTest {
 
     @Test
     public void test() {
-        assertThat(GraphiteVisitor.metricName(this.sample, this.prefix), is(this.expected));
+        assertThat(CarbonVisitor.metricName(this.sample, this.prefix), is(this.expected));
     }
 
     /** Test data. */

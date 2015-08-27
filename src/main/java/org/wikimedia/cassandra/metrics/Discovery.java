@@ -15,28 +15,59 @@ import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 
-class Discovery {
+public class Discovery {
 
-    static class Jvm {
+    public static class Jvm {
         private final String cassandraInstance;
         private final JMXServiceURL jmxUrl;
 
-        Jvm(String cassandraInstance, JMXServiceURL jmxUrl) {
+        public Jvm(String cassandraInstance, JMXServiceURL jmxUrl) {
             this.cassandraInstance = cassandraInstance;
             this.jmxUrl = jmxUrl;
         }
 
-        String getCassandraInstance() {
+        public String getCassandraInstance() {
             return cassandraInstance;
         }
 
-        JMXServiceURL getJmxUrl() {
+        public JMXServiceURL getJmxUrl() {
             return jmxUrl;
         }
 
         @Override
         public String toString() {
             return "Jvm [cassandraInstance=" + cassandraInstance + ", jmxUrl=" + jmxUrl + "]";
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((cassandraInstance == null) ? 0 : cassandraInstance.hashCode());
+            result = prime * result + ((jmxUrl == null) ? 0 : jmxUrl.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Jvm other = (Jvm) obj;
+            if (cassandraInstance == null) {
+                if (other.cassandraInstance != null)
+                    return false;
+            } else if (!cassandraInstance.equals(other.cassandraInstance))
+                return false;
+            if (jmxUrl == null) {
+                if (other.jmxUrl != null)
+                    return false;
+            } else if (!jmxUrl.equals(other.jmxUrl))
+                return false;
+            return true;
         }
 
     }
@@ -46,11 +77,11 @@ class Discovery {
 
     private final Map<String, Jvm> jvms = Maps.newHashMap();
 
-    Discovery() throws IOException {
+    public Discovery() throws IOException {
         discover();
     }
 
-    Map<String, Jvm> getJvms() {
+    public Map<String, Jvm> getJvms() {
         return jvms;
     }
 

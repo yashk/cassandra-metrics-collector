@@ -46,7 +46,7 @@ public class Command {
                 collector.getSamples(new TsvVisitor(System.out, args[4]));
             }
             else {
-                try (GraphiteVisitor visitor = new GraphiteVisitor(args[2], graphitePort, args[4])) {
+                try (CarbonVisitor visitor = new CarbonVisitor(args[2], graphitePort, args[4])) {
                     collector.getSamples(visitor);
                 }
             }

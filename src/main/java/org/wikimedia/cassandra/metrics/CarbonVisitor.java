@@ -16,15 +16,12 @@
 package org.wikimedia.cassandra.metrics;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_HOST;
 import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_PORT;
 import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_PREFIX;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import javax.management.ObjectName;
@@ -34,51 +31,51 @@ import com.google.common.base.Splitter;
 
 /**
  * JmxSample visitor implementation that writes metrics to Graphite. The aim is to be compatible with
- * Dropwizards GraphiteReporter persistence.
+ * Dropwizard's GraphiteReporter persistence.
  * 
  * @author eevans
  */
-public class GraphiteVisitor implements SampleVisitor, AutoCloseable {
-    private final String hostname;
-    private final int port;
+public class CarbonVisitor implements SampleVisitor, AutoCloseable {
     private final String prefix;
 
-    private Socket socket;
-    private OutputStream outStream;
-    private PrintWriter writer;
+    private CarbonConnector connector;
     private boolean isClosed = false;
 
     /**
-     * Create a new {@link GraphiteVisitor} using the default host, port, and prefix.
+     * Create a new {@link CarbonVisitor} using the default host, port, and
+     * prefix.
      */
-    public GraphiteVisitor() {
+    public CarbonVisitor() {
         this(DEFAULT_GRAPHITE_HOST);
     }
 
     /**
-     * Create a new {@link GraphiteVisitor} with the supplied host, and the default port and prefix.
+     * Create a new {@link CarbonVisitor} with the supplied host, and the
+     * default port and prefix.
      * 
      * @param host
      *            the Graphite host to connect to
      */
-    public GraphiteVisitor(String host) {
+    public CarbonVisitor(String host) {
         this(host, DEFAULT_GRAPHITE_PORT);
     }
 
     /**
-     * Create a new {@link GraphiteVisitor} with the supplied host and port, and the default prefix.
+     * Create a new {@link CarbonVisitor} with the supplied host and port, and
+     * the default prefix.
      * 
      * @param host
      *            Graphite host to connect to
      * @param port
      *            the Graphite port number
      */
-    public GraphiteVisitor(String host, int port) {
+    public CarbonVisitor(String host, int port) {
         this(host, port, DEFAULT_GRAPHITE_PREFIX);
     }
 
     /**
-     * Create a new {@link GraphiteVisitor} using the supplied host, port, and prefix.
+     * Create a new {@link CarbonVisitor} using the supplied host, port, and
+     * prefix.
      * 
      * @param host
      *            Graphite host to connect to
@@ -87,27 +84,33 @@ public class GraphiteVisitor implements SampleVisitor, AutoCloseable {
      * @param prefix
      *            string to prefix to each metric name
      */
-    public GraphiteVisitor(String host, int port, String prefix) {
-        this.hostname = checkNotNull(host, "host argument");
-        this.port = checkNotNull(port, "port argument");
+    public CarbonVisitor(String host, int port, String prefix) {
+        checkNotNull(host, "host argument");
+        checkNotNull(port, "port argument");
         this.prefix = checkNotNull(prefix, "prefix argument");
 
-        try {
-            this.socket = createSocket();
-            this.outStream = socket.getOutputStream();
-        }
-        catch (IOException e) {
-            throw new GraphiteException(String.format("error connecting to %s:%d", this.hostname, this.port), e);
-        }
+        this.connector = new CarbonConnector(host, port);
 
-        this.writer = new PrintWriter(this.outStream, true);
     }
 
+    /**
+     * Create a new {@link CarbonVisitor} using the supplied {@link CarbonConnector}.
+     * 
+     * @param carbon
+     *            Carbon connector instance
+     * @param prefix
+     *            string to prefix to each metric name
+     */
+    public CarbonVisitor(CarbonConnector carbon, String prefix) {
+        this.connector = checkNotNull(carbon, "carbon argument");
+        this.prefix = checkNotNull(prefix, "prefix argument");
+    }
+    
     /** {@inheritDoc} */
     @Override
     public void visit(JmxSample jmxSample) {
-        if (this.isClosed) throw new GraphiteException("cannot call visit on closed object");
-        this.writer.println(String.format("%s %s %d", metricName(jmxSample, this.prefix), jmxSample.getValue(), jmxSample.getTimestamp()));
+        checkState(!this.isClosed, "cannot write to closed object");
+        this.connector.write(metricName(jmxSample, this.prefix), jmxSample.getValue(), jmxSample.getTimestamp());
     }
 
     /**
@@ -116,34 +119,13 @@ public class GraphiteVisitor implements SampleVisitor, AutoCloseable {
      */
     @Override
     public void close() throws IOException {
-        this.writer.flush();
-        this.writer.close();
-        this.outStream.close();
-        this.socket.close();
+        this.connector.close();
         this.isClosed = true;
     }
 
     @Override
     public String toString() {
-        return "GraphiteVisitor [hostname="
-                + hostname
-                + ", port="
-                + port
-                + ", prefix="
-                + prefix
-                + ", socket="
-                + socket
-                + ", outStream="
-                + outStream
-                + ", writer="
-                + writer
-                + ", isClosed="
-                + isClosed
-                + "]";
-    }
-
-    protected Socket createSocket() throws UnknownHostException, IOException {
-        return new Socket(this.hostname, this.port);
+        return "CarbonVisitor [carbonConnector=" + connector + ", prefix=" + prefix + ", isClosed=" + isClosed + "]";
     }
 
     // There doesn't seem to be a deterministic way to translate these JMX resources to Graphite

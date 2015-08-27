@@ -44,7 +44,7 @@ public class TsvVisitor implements SampleVisitor {
     public void visit(JmxSample jmxSample) {
         this.stream.printf(
                 "%s %s %s%n",
-                GraphiteVisitor.metricName(jmxSample, this.prefix),
+                CarbonVisitor.metricName(jmxSample, this.prefix),
                 jmxSample.getValue(),
                 jmxSample.getTimestamp());
     }
