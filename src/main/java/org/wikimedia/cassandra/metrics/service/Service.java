@@ -74,13 +74,6 @@ public class Service {
 
         Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
 
-        // Triggers Cassandra metrics collection
-        Trigger collectionTrigger = newTrigger()
-                .withIdentity("collectionTrigger", "collectionGroup")
-                .startNow()
-                .withSchedule(simpleSchedule().withIntervalInSeconds(interval).repeatForever())
-                .build();
-
         // Triggers periodic (re)discovery
         Trigger discoveryTrigger = newTrigger()
                 .withIdentity("discoveryTrigger", "discoveryGroup")
@@ -102,7 +95,7 @@ public class Service {
         JobDataMap discoverMap = new JobDataMap();
         discoverMap.put("instances", state);
         discoverMap.put("scheduler", scheduler);
-        discoverMap.put("trigger", collectionTrigger);
+        discoverMap.put("interval", interval);
         discoverMap.put("carbonHost", carbonHost);
         discoverMap.put("carbonPort", carbonPort);
 

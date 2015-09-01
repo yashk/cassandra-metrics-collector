@@ -14,6 +14,8 @@
  */
 package org.wikimedia.cassandra.metrics.service;
 
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
@@ -28,6 +30,7 @@ import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +46,7 @@ public class Discover implements Job {
 
     private InstanceCache instances;
     private Scheduler scheduler;
-    private Trigger trigger;
+    private int interval;
     private String carbonHost;
     private int carbonPort;
 
@@ -77,7 +80,7 @@ public class Discover implements Job {
 
                     LOG.debug("Scheduling recurring metrics collection for {}", jvm.getCassandraInstance());
 
-                    this.scheduler.scheduleJob(job, this.trigger);
+                    this.scheduler.scheduleJob(job, newTrigger(jvm.getCassandraInstance(), this.interval));
                     this.instances.add(jvm.getCassandraInstance(), jvm);
                 }
                 catch (IOException e) {
@@ -111,8 +114,8 @@ public class Discover implements Job {
         this.instances = instances;
     }
 
-    public void setTrigger(Trigger trigger) {
-        this.trigger = trigger;
+    public void setInterval(Integer interval) {
+        this.interval = interval;
     }
 
     public void setCarbonHost(String carbonHost) {
@@ -125,8 +128,20 @@ public class Discover implements Job {
 
     @Override
     public String toString() {
-        return "Discover [instances=" + instances + ", scheduler=" + scheduler + ", trigger=" + trigger + ", carbonHost="
+        return "Discover [instances=" + instances + ", scheduler=" + scheduler + ", interval=" + interval + ", carbonHost="
                 + carbonHost + ", carbonPort=" + carbonPort + "]";
+    }
+
+    private static Trigger newTrigger(String instance, int interval) {
+        return TriggerBuilder.newTrigger()
+                .withIdentity(triggerName(instance), "collectionGroup")
+                .startNow()
+                .withSchedule(simpleSchedule().withIntervalInSeconds(interval).repeatForever())
+                .build();
+    }
+
+    private static String triggerName(String instance) {
+        return String.format("%s_Trigger", instance);
     }
 
 }
