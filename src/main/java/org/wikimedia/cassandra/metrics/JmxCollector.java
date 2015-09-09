@@ -75,9 +75,10 @@ public class JmxCollector implements AutoCloseable {
 
     private final String hostname;
     private final int port;
-    private final JMXConnector jmxc;
-    private final MBeanServerConnection mbeanServerConn;
-    private final ObjectName metricsObjectName;
+    private final ObjectName metricsObjectName = newObjectName("org.apache.cassandra.metrics:*");
+
+    private JMXConnector jmxc;
+    private MBeanServerConnection mbeanServerConn;
 
     public JmxCollector() throws IOException {
         this(DEFAULT_JMX_HOST);
@@ -91,8 +92,6 @@ public class JmxCollector implements AutoCloseable {
         this.hostname = checkNotNull(host, "host argument");
         this.port = checkNotNull(port, "port argument");
 
-        this.metricsObjectName = newObjectName("org.apache.cassandra.metrics:*");
-
         JMXServiceURL jmxUrl;
         try {
             jmxUrl = new JMXServiceURL(String.format(FORMAT_URL, this.hostname, this.port));
@@ -101,6 +100,17 @@ public class JmxCollector implements AutoCloseable {
             throw new IllegalArgumentException(e.getMessage());
         }
 
+        connect(jmxUrl);
+    }
+
+    public JmxCollector(JMXServiceURL jmxUrl) throws IOException {
+        this.hostname = jmxUrl.getHost();
+        this.port = jmxUrl.getPort();
+
+        connect(jmxUrl);
+    }
+
+    private void connect(JMXServiceURL jmxUrl) throws IOException {
         /* FIXME: add authentication support */
         Map<String, Object> env = new HashMap<String, Object>();
         this.jmxc = JMXConnectorFactory.connect(jmxUrl, env);
