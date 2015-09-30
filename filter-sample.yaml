@@ -1,0 +1,4 @@
+blacklist:
+  - .*\.meanRate$
+  - .*\.50percentile$
+  - .*\.999percentile$

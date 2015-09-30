@@ -28,7 +28,10 @@ import org.slf4j.LoggerFactory;
 import org.wikimedia.cassandra.metrics.CarbonException;
 import org.wikimedia.cassandra.metrics.CarbonVisitor;
 import org.wikimedia.cassandra.metrics.Discovery;
+import org.wikimedia.cassandra.metrics.Filter;
 import org.wikimedia.cassandra.metrics.JmxCollector;
+
+import com.google.common.base.Optional;
 
 public class Collector implements Job {
     public static enum Status {
@@ -41,6 +44,7 @@ public class Collector implements Job {
     private String carbonHost;
     private int carbonPort;
     private String instanceName;
+    private Optional<Filter> filter;
     private Status status = FAILURE;
 
     @Override
@@ -51,7 +55,7 @@ public class Collector implements Job {
             LOG.debug("Connected to {}", this.jvm.getJmxUrl());
             LOG.debug("Connecting to {}:{}", this.carbonHost, this.carbonPort);
 
-            try (CarbonVisitor v = new CarbonVisitor(this.carbonHost, this.carbonPort, prefix(this.instanceName))) {
+            try (CarbonVisitor v = new CarbonVisitor(this.carbonHost, this.carbonPort, prefix(this.instanceName), filter)) {
                 LOG.debug("Collecting...");
                 j.getSamples(v);
             }
@@ -100,10 +104,14 @@ public class Collector implements Job {
         this.instanceName = instanceName;
     }
 
+    public void setFilter(Object filter) {
+        this.filter = (filter != null) ? Optional.of((Filter)filter) : Optional.<Filter>absent();
+    }
+
     @Override
     public String toString() {
         return "Collector [jvm=" + jvm + ", carbonHost=" + carbonHost + ", carbonPort=" + carbonPort + ", instanceName="
-                + instanceName + ", status=" + status + "]";
+                + instanceName + ", filter=" + filter + ", status=" + status + "]";
     }
 
     private static String prefix(String id) {

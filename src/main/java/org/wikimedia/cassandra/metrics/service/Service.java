@@ -19,7 +19,11 @@ import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 import static org.quartz.impl.matchers.GroupMatcher.jobGroupEquals;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.inject.Inject;
 
@@ -31,7 +35,11 @@ import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wikimedia.cassandra.metrics.Filter;
+import org.wikimedia.cassandra.metrics.FilterConfig;
 import org.wikimedia.cassandra.metrics.Utils;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 
 import com.github.rvesse.airline.Command;
 import com.github.rvesse.airline.HelpOption;
@@ -61,7 +69,21 @@ public class Service {
     @Option(name = { "-di", "--discovery-interval" }, description = "Interval (in seconds) to perform (re)discovery (default: 300 seconds)", title = "INTERVAL")
     private int discoverInterval = 300;
 
+    @Option(name = {"-f", "--filter-config"}, description = "Metric filter configuration", title = "YAML")
+    private String filterConfig = null;
+
     private InstanceCache state = new InstanceCache();
+
+    Filter getFilter() throws FileNotFoundException, IOException {
+        if (this.filterConfig != null) {
+            try (InputStream f = new FileInputStream(new File(this.filterConfig))) {
+                Yaml yaml = new Yaml(new Constructor(FilterConfig.class));
+                FilterConfig config = (FilterConfig)yaml.load(f);
+                return new Filter(config);
+            }
+        }
+        return null;
+    }
 
     void execute() throws SchedulerException, IOException {
 
@@ -98,6 +120,7 @@ public class Service {
         discoverMap.put("interval", interval);
         discoverMap.put("carbonHost", carbonHost);
         discoverMap.put("carbonPort", carbonPort);
+        discoverMap.put("filter", getFilter());
 
         JobDetail discoverJob = newJob(Discover.class)
                 .withIdentity("discoveryJob", "discoveryGroup")
@@ -157,6 +180,7 @@ public class Service {
         } catch (Throwable e) {
             System.err.println("Unexpected error: " + e.getLocalizedMessage());
             e.printStackTrace(System.err);
+            System.exit(1);
         }
 
     }
