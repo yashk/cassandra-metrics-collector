@@ -17,9 +17,6 @@ package org.wikimedia.cassandra.metrics;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_HOST;
-import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_PORT;
-import static org.wikimedia.cassandra.metrics.Constants.DEFAULT_GRAPHITE_PREFIX;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,38 +39,6 @@ public class CarbonVisitor implements SampleVisitor, AutoCloseable {
     private boolean isClosed = false;
 
     /**
-     * Create a new {@link CarbonVisitor} using the default host, port, and
-     * prefix.
-     */
-    public CarbonVisitor() {
-        this(DEFAULT_GRAPHITE_HOST);
-    }
-
-    /**
-     * Create a new {@link CarbonVisitor} with the supplied host, and the
-     * default port and prefix.
-     * 
-     * @param host
-     *            the Graphite host to connect to
-     */
-    public CarbonVisitor(String host) {
-        this(host, DEFAULT_GRAPHITE_PORT);
-    }
-
-    /**
-     * Create a new {@link CarbonVisitor} with the supplied host and port, and
-     * the default prefix.
-     * 
-     * @param host
-     *            Graphite host to connect to
-     * @param port
-     *            the Graphite port number
-     */
-    public CarbonVisitor(String host, int port) {
-        this(host, port, DEFAULT_GRAPHITE_PREFIX);
-    }
-
-    /**
      * Create a new {@link CarbonVisitor} using the supplied host, port, and
      * prefix.
      * 
@@ -85,12 +50,7 @@ public class CarbonVisitor implements SampleVisitor, AutoCloseable {
      *            string to prefix to each metric name
      */
     public CarbonVisitor(String host, int port, String prefix) {
-        checkNotNull(host, "host argument");
-        checkNotNull(port, "port argument");
-        this.prefix = checkNotNull(prefix, "prefix argument");
-
-        this.connector = new CarbonConnector(host, port);
-
+        this(new CarbonConnector(host, port), prefix);
     }
 
     /**
