@@ -1,4 +1,4 @@
-cassandra-metrics-collector
+cassandra-metrics-collector [![Build Status](https://travis-ci.org/wikimedia/cassandra-metrics-collector.svg?branch=master)](https://travis-ci.org/wikimedia/cassandra-metrics-collector)
 ===========================
 
 Discovers running instances of Cassandra on the local machine, collects
