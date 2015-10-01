@@ -10,10 +10,10 @@
   * jvm.daemon_thread_count
   * jvm.fd_usage
   * jvm.thread_count
-* daemon mode
+* ~~daemon mode~~
 * configuration with file (yaml)
-  * excludes/includes
+  * ~~excludes/includes~~
 * multiple jmx sources
 * multiple sinks
-* tests
+* (more (,better ))tests
 * support jmx auth, encryption
