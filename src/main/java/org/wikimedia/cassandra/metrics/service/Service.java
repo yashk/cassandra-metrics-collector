@@ -57,10 +57,10 @@ public class Service {
     @Inject
     private HelpOption help;
 
-    @Option(name = { "-H", "--carbon-host" }, description = "Carbon hostname (default: localhost)", title = "HOSTNAME")
+    @Option(name = { "-H", "--carbon-host", "--graphite-host" }, description = "Carbon hostname (default: localhost)", title = "HOSTNAME")
     private String carbonHost = "localhost";
 
-    @Option(name = { "-p", "--carbon-port" }, description = "Carbon port number (default: 2003)", title = "PORT")
+    @Option(name = { "-p", "--carbon-port", "--graphite-port" }, description = "Carbon port number (default: 2003)", title = "PORT")
     private int carbonPort = 2003;
 
     @Option(name = { "-i", "--interval" }, description = "Collection interval in seconds (default: 60 seconds)", title = "INTERVAL")
