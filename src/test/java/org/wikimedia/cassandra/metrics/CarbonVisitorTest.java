@@ -29,6 +29,8 @@ import javax.management.ObjectName;
 
 import org.junit.Test;
 
+import com.google.common.base.Optional;
+
 public class CarbonVisitorTest {
 
     @Test
@@ -46,7 +48,7 @@ public class CarbonVisitorTest {
             }
         };
 
-        CarbonVisitor visitor = new CarbonVisitor(carbon, "cassandra");
+        CarbonVisitor visitor = new CarbonVisitor(carbon, "cassandra", Optional.<Filter>absent());
 
         visitor.visit(new JmxSample(Type.JVM, new ObjectName("java.lang:type=Runtime"), "uptime", Integer.valueOf(1), 1));
 

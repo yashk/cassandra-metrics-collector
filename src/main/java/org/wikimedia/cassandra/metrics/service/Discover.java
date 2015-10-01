@@ -49,6 +49,7 @@ public class Discover implements Job {
     private int interval;
     private String carbonHost;
     private int carbonPort;
+    private Object filter;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -72,6 +73,7 @@ public class Discover implements Job {
                     dataMap.put("carbonHost", carbonHost);
                     dataMap.put("carbonPort", carbonPort);
                     dataMap.put("instanceName", jvm.getCassandraInstance());
+                    dataMap.put("filter", filter);
 
                     JobDetail job = JobBuilder.newJob(Collector.class)
                             .withIdentity(jvm.getCassandraInstance(), "collectionGroup")
@@ -126,10 +128,14 @@ public class Discover implements Job {
         this.carbonPort = carbonPort;
     }
 
+    public void setFilter(Object filter) {
+        this.filter = filter;
+    }
+
     @Override
     public String toString() {
         return "Discover [instances=" + instances + ", scheduler=" + scheduler + ", interval=" + interval + ", carbonHost="
-                + carbonHost + ", carbonPort=" + carbonPort + "]";
+                + carbonHost + ", carbonPort=" + carbonPort + ", filter=" + filter + "]";
     }
 
     private static Trigger newTrigger(String instance, int interval) {
