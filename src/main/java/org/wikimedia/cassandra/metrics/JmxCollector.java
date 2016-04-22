@@ -45,10 +45,10 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.apache.cassandra.metrics.CassandraMetricsRegistry;
 import org.wikimedia.cassandra.metrics.JmxSample.Type;
 
 import com.google.common.collect.Sets;
-import com.yammer.metrics.reporting.JmxReporter;
 
 
 public class JmxCollector implements AutoCloseable {
@@ -60,12 +60,11 @@ public class JmxCollector implements AutoCloseable {
 
     static {
         mbeanClasses = new HashMap<String, Class<?>>();
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Gauge", JmxReporter.GaugeMBean.class);
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Timer", JmxReporter.TimerMBean.class);
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Counter", JmxReporter.CounterMBean.class);
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Meter", JmxReporter.MeterMBean.class);
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Histogram", JmxReporter.HistogramMBean.class);
-        mbeanClasses.put("com.yammer.metrics.reporting.JmxReporter$Meter", JmxReporter.MeterMBean.class);
+        mbeanClasses.put("org.apache.cassandra.metrics.CassandraMetricsRegistry$JmxGauge", CassandraMetricsRegistry.JmxGaugeMBean.class);
+        mbeanClasses.put("org.apache.cassandra.metrics.CassandraMetricsRegistry$JmxTimer", CassandraMetricsRegistry.JmxTimerMBean.class);
+        mbeanClasses.put("org.apache.cassandra.metrics.CassandraMetricsRegistry$JmxCounter", CassandraMetricsRegistry.JmxCounterMBean.class);
+        mbeanClasses.put("org.apache.cassandra.metrics.CassandraMetricsRegistry$JmxMeter", CassandraMetricsRegistry.JmxMeterMBean.class);
+        mbeanClasses.put("org.apache.cassandra.metrics.CassandraMetricsRegistry$JmxHistogram", CassandraMetricsRegistry.JmxHistogramMBean.class);
 
         blacklist = new HashSet<ObjectName>();
         blacklist.add(newObjectName("org.apache.cassandra.metrics:type=ColumnFamily,name=SnapshotsSize"));
@@ -169,8 +168,8 @@ public class JmxCollector implements AutoCloseable {
 
             // Order matters here (for example: TimerMBean extends MeterMBean)
 
-            if (proxy instanceof JmxReporter.TimerMBean) {
-                JmxReporter.TimerMBean timer = (JmxReporter.TimerMBean)proxy;
+            if (proxy instanceof CassandraMetricsRegistry.JmxTimerMBean) {
+                CassandraMetricsRegistry.JmxTimerMBean timer = (CassandraMetricsRegistry.JmxTimerMBean)proxy;
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", timer.get50thPercentile(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", timer.get75thPercentile(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "95percentile", timer.get95thPercentile(), timestamp));
@@ -189,8 +188,8 @@ public class JmxCollector implements AutoCloseable {
                 continue;
             }
 
-            if (proxy instanceof JmxReporter.MeterMBean) {
-                JmxReporter.MeterMBean meter = (JmxReporter.MeterMBean)proxy;
+            if (proxy instanceof CassandraMetricsRegistry.JmxMeterMBean) {
+                CassandraMetricsRegistry.JmxMeterMBean meter = (CassandraMetricsRegistry.JmxMeterMBean)proxy;
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "15MinuteRate", meter.getFifteenMinuteRate(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "1MinuteRate", meter.getOneMinuteRate(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "5MinuteRate", meter.getFiveMinuteRate(), timestamp));
@@ -199,8 +198,8 @@ public class JmxCollector implements AutoCloseable {
                 continue;
             }
 
-            if (proxy instanceof JmxReporter.HistogramMBean) {
-                JmxReporter.HistogramMBean histogram = (JmxReporter.HistogramMBean)proxy;
+            if (proxy instanceof CassandraMetricsRegistry.JmxHistogramMBean) {
+                CassandraMetricsRegistry.JmxHistogramMBean histogram = (CassandraMetricsRegistry.JmxHistogramMBean)proxy;
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", histogram.get50thPercentile(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", histogram.get75thPercentile(), timestamp));
                 visitor.visit(new JmxSample(Type.CASSANDRA, oName, "95percentile", histogram.get95thPercentile(), timestamp));
@@ -214,13 +213,13 @@ public class JmxCollector implements AutoCloseable {
                 continue;
             }
 
-            if (proxy instanceof JmxReporter.GaugeMBean) {
+            if (proxy instanceof CassandraMetricsRegistry.JmxGaugeMBean) {
                 // EstimatedRowSizeHistogram and EstimatedColumnCountHistogram are allegedly Gauge, but with a value
                 // of type of long[], we're left with little choice but to special-case them.  This borrows code from
                 // Cassandra to decode the array into a histogram (50p, 75p, 95p, 98p, 99p, min, and max).
                 String name = oName.getKeyProperty("name");
                 if (name.equals("EstimatedRowSizeHistogram") || name.equals("EstimatedColumnCountHistogram")) {
-                    Object value = ((JmxReporter.GaugeMBean) proxy).getValue();
+                    Object value = ((CassandraMetricsRegistry.JmxGaugeMBean) proxy).getValue();
                     double[] percentiles = metricPercentilesAsArray((long[])value);
                     visitor.visit(new JmxSample(Type.CASSANDRA, oName, "50percentile", percentiles[0], timestamp));
                     visitor.visit(new JmxSample(Type.CASSANDRA, oName, "75percentile", percentiles[1], timestamp));
@@ -235,18 +234,18 @@ public class JmxCollector implements AutoCloseable {
                             Type.CASSANDRA,
                             oName,
                             "value",
-                            ((JmxReporter.GaugeMBean) proxy).getValue(),
+                            ((CassandraMetricsRegistry.JmxGaugeMBean) proxy).getValue(),
                             timestamp));
                 }
                 continue;
             }
 
-            if (proxy instanceof JmxReporter.CounterMBean) {
+            if (proxy instanceof CassandraMetricsRegistry.JmxCounterMBean) {
                 visitor.visit(new JmxSample(
                         Type.CASSANDRA,
                         oName,
                         "count",
-                        ((JmxReporter.CounterMBean) proxy).getCount(),
+                        ((CassandraMetricsRegistry.JmxCounterMBean) proxy).getCount(),
                         timestamp));
                 continue;
             }

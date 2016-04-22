@@ -1,6 +1,9 @@
 cassandra-metrics-collector [![Build Status](https://travis-ci.org/wikimedia/cassandra-metrics-collector.svg?branch=master)](https://travis-ci.org/wikimedia/cassandra-metrics-collector)
 ===========================
 
+*Note: This branch supports Cassandra >= 2.2 (tested with 2.2.5).  For Cassandra 2.1,
+please use [this branch](https://github.com/wikimedia/cassandra-metrics-collector/tree/2.0.0).*
+
 Discovers running instances of Cassandra on the local machine, collects
 performance metrics (via JMX, using a domain socket), and writes them to
 [Graphite](https://github.com/graphite-project/graphite-web)/[Carbon](https://github.com/graphite-project/carbon)
@@ -42,8 +45,9 @@ Run
                         Carbon port number (default: 2003)
 
 For example:
-    
-    $ java -jar cassandra-metrics-collector-<version>-jar-with-dependencies.jar \
+
+    $ export CLASSPATH=/path/to/apache-cassandra.jar:/path/to/cassandra-metrics-collector-<version>-jar-with-dependencies.jar
+    $ java org.wikimedia.cassandra.metrics.service.Service \
             --interval 60 \
             --carbon-host carbon-1.example.com \
             --carbon-port 2003 \
@@ -54,12 +58,14 @@ Simple invocation
 It is also possible to invoke a single collection cycle against a specific
 instance over TCP.
 
-    $ java -cp target/cassandra-metrics-collector-<version>-jar-with-dependencies.jar org.wikimedia.cassandra.metrics.Command
+    $ export CLASSPATH=/path/to/apache-cassandra.jar:/path/to/cassandra-metrics-collector-<version>-jar-with-dependencies.jar
+    $ java org.wikimedia.cassandra.metrics.Command
     Usage: Command <jmx host> <jmx port> <graphite host> <graphite port> <prefix>
 
 For example:
 
-    $ java -cp target/cassandra-metrics-collector-<version>-jar-with-dependencies.jar org.wikimedia.cassandra.metrics.Command \
+    $ export CLASSPATH=/path/to/apache-cassandra.jar:/path/to/cassandra-metrics-collector-<version>-jar-with-dependencies.jar
+    $ java -cp org.wikimedia.cassandra.metrics.Command \
           db-1.example.com \
           7199 \
           carbon-1.example.com \
@@ -77,7 +83,8 @@ Open a socket and listen on port 2003:
 
 Collect Cassandra metrics and write to netcat:
 
-    $ java -jar cassandra-metrics-collector-<version>-jar-with-dependencies.jar \
+    $ export CLASSPATH=/path/to/apache-cassandra.jar:/path/to/cassandra-metrics-collector-<version>-jar-with-dependencies.jar
+    $ java org.wikimedia.cassandra.metrics.service.Service \
           --interval 15 \
           --carbon-host localhost \
           --carbon-port 2003 \
