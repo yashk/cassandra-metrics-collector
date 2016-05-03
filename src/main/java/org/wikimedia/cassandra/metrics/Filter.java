@@ -14,6 +14,7 @@
  */
 package org.wikimedia.cassandra.metrics;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -24,7 +25,8 @@ import com.google.common.collect.Lists;
 public class Filter {
 
     private List<Pattern> blacklist;
-    
+    private List<Pattern> whitelist;
+
     public Filter(FilterConfig config) {
         blacklist = Lists.newArrayList(
             Iterables.transform(config.getBlacklist(), new Function<String, Pattern>() {
@@ -35,24 +37,40 @@ public class Filter {
             })
         );
 
+        whitelist = Lists.newArrayList(
+                Iterables.transform(config.getWhitelist(), new Function<String, Pattern>() {
+                    @Override
+                    public Pattern apply(String input) {
+                         return Pattern.compile(input);
+                    }
+                })
+        );
     }
 
     private boolean blackListed(String id) {
-        for (Pattern p : blacklist) {
+        return listed(id, this.blacklist);
+    }
+
+    private boolean whiteListed(String id) {
+        return listed(id, this.whitelist);
+    }
+
+    public boolean accept(String id) {
+        return whiteListed(id) ? true : !blackListed(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Filter [blacklist=" + blacklist + ", whitelist=" + whitelist + "]";
+    }
+
+    private static boolean listed(String id, Collection<Pattern> list) {
+        for (Pattern p : list) {
             if (p.matcher(id).matches()) {
                 return true;
             }
         }
         return false;
-    }
-
-    public boolean accept(String id) {
-        return !blackListed(id);
-    }
-
-    @Override
-    public String toString() {
-        return "Filter [blacklist=" + blacklist + "]";
     }
 
 }
