@@ -15,21 +15,31 @@
 package org.wikimedia.cassandra.metrics;
 
 import java.util.Collection;
+import java.util.Collections;
 
 public class FilterConfig {
     private Collection<String> blacklist;
+    private Collection<String> whitelist;
 
     public Collection<String> getBlacklist() {
-        return blacklist;
+        return (blacklist != null) ? blacklist : Collections.<String>emptyList();
     }
 
     public void setBlacklist(Collection<String> blacklist) {
         this.blacklist = blacklist;
     }
 
+    public Collection<String> getWhitelist() {
+        return (whitelist != null) ? whitelist : Collections.<String>emptyList();
+    }
+
+    public void setWhitelist(Collection<String> whitelist) {
+        this.whitelist = whitelist;
+    }
+
     @Override
     public String toString() {
-        return "FilterConfig [blacklist=" + blacklist + "]";
+        return "FilterConfig [blacklist=" + blacklist + ", whitelist=" + whitelist + "]";
     }
 
 }
