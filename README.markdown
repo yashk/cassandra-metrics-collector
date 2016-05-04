@@ -25,24 +25,34 @@ Run
     $ java -jar target/cassandra-metrics-collector-<version>-jar-with-dependencies.jar --help
     
     NAME
-                cmcd - cassandra-metrics-collector daemon
+            cmcd - cassandra-metrics-collector daemon
     
     SYNOPSIS
-            cmcd [ {-h | --help} ] [ {-H | --carbon-host} <HOSTNAME> ]
-                            [ {-i | --interval} <INTERVAL> ] [ {-p | --carbon-port} <PORT> ]
+            cmcd [ {-di | --discovery-interval} <INTERVAL> ]
+                    [ {-f | --filter-config} <YAML> ] [ {-h | --help} ]
+                    [ {-H | --carbon-host | --graphite-host} <HOSTNAME> ]
+                    [ {-i | --interval} <INTERVAL> ]
+                    [ {-p | --carbon-port | --graphite-port} <PORT> ]
     
     OPTIONS
-            -h, --help
-                        Display help information
+            -di <INTERVAL>, --discovery-interval <INTERVAL>
+                Interval (in seconds) to perform (re)discovery (default: 300
+                seconds)
     
-            -H <HOSTNAME>, --carbon-host <HOSTNAME>
-                        Carbon hostname (default: localhost)
+            -f <YAML>, --filter-config <YAML>
+                Metric filter configuration
+    
+            -h, --help
+                Display help information
+    
+            -H <HOSTNAME>, --carbon-host <HOSTNAME>, --graphite-host <HOSTNAME>
+                Carbon hostname (default: localhost)
     
             -i <INTERVAL>, --interval <INTERVAL>
-                        Collection interval in seconds (default: 60 seconds)
+                Collection interval in seconds (default: 60 seconds)
     
-            -p <PORT>, --carbon-port <PORT>
-                        Carbon port number (default: 2003)
+            -p <PORT>, --carbon-port <PORT>, --graphite-port <PORT>
+                Carbon port number (default: 2003)
 
 For example:
 
@@ -88,3 +98,4 @@ Collect Cassandra metrics and write to netcat:
           --interval 15 \
           --carbon-host localhost \
           --carbon-port 2003 \
+
