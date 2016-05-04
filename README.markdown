@@ -2,7 +2,7 @@ cassandra-metrics-collector [![Build Status](https://travis-ci.org/wikimedia/cas
 ===========================
 
 *Note: This branch supports Cassandra >= 2.2 (tested with 2.2.5).  For Cassandra 2.1,
-please use [this branch](https://github.com/wikimedia/cassandra-metrics-collector/tree/2.0.0).*
+please use [this branch](https://github.com/wikimedia/cassandra-metrics-collector/tree/v2).*
 
 Discovers running instances of Cassandra on the local machine, collects
 performance metrics (via JMX, using a domain socket), and writes them to
