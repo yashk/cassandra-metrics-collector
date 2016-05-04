@@ -35,6 +35,9 @@ public class FilterTest {
         assertThat(filter.accept("blacklisted.metric.1MinuteRate"), is(false));
         assertThat(filter.accept("blacklisted.metric.99Percentile"), is(false));
 
+        // This one should be white listed
+        assertThat(filter.accept("blacklisted.wanted.metric.99Percentile"), is(true));
+
     }
 
 }
