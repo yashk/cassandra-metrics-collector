@@ -74,6 +74,7 @@ public class Discover implements Job {
                     dataMap.put("carbonPort", carbonPort);
                     dataMap.put("instanceName", jvm.getCassandraInstance());
                     dataMap.put("filter", filter);
+                    dataMap.put("interval", interval);
 
                     JobDetail job = JobBuilder.newJob(Collector.class)
                             .withIdentity(jvm.getCassandraInstance(), "collectionGroup")

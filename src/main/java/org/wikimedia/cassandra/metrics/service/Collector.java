@@ -1,4 +1,4 @@
-/* Copyright 2015 Eric Evans <eevans@wikimedia.org> and Wikimedia Foundation
+/* Copyright 2015, 2016 Eric Evans <eevans@wikimedia.org> and Wikimedia Foundation
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static org.wikimedia.cassandra.metrics.service.Collector.Status.FAILURE;
 import static org.wikimedia.cassandra.metrics.service.Collector.Status.SUCCESS;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -45,22 +46,36 @@ public class Collector implements Job {
     private int carbonPort;
     private String instanceName;
     private Optional<Filter> filter;
+    private int interval;
     private Status status = FAILURE;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         LOG.debug("Connection to {}", this.jvm.getJmxUrl());
 
-        try (JmxCollector j = new JmxCollector(this.jvm.getJmxUrl())) {
+        try (final JmxCollector j = new JmxCollector(this.jvm.getJmxUrl())) {
             LOG.debug("Connected to {}", this.jvm.getJmxUrl());
             LOG.debug("Connecting to {}:{}", this.carbonHost, this.carbonPort);
 
-            try (CarbonVisitor v = new CarbonVisitor(this.carbonHost, this.carbonPort, prefix(this.instanceName), filter)) {
+            try (final CarbonVisitor v = new CarbonVisitor(this.carbonHost, this.carbonPort, prefix(this.instanceName), filter)) {
                 LOG.debug("Collecting...");
-                j.getSamples(v);
+                new TimedTask<Void>(Math.min(interval, 60)).submit(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        j.getSamples(v);
+                        return null;
+                    }
+                });
             }
+            // CarbonException can be thrown by the CarbonVisitor ctor, any other exception (including
+            // CarbonExceptions thrown during writes) will be encapsulated in a TimedTaskException.
             catch (CarbonException e) {
-                LOG.error("Carbon Error", e);
+                LOG.error("Error connecting to carbon", e);
+                this.status = FAILURE;
+                return;
+            }
+            catch (TimedTaskException e) {
+                LOG.error("Error executing timed task", e);
                 this.status = FAILURE;
                 return;
             }
@@ -108,10 +123,14 @@ public class Collector implements Job {
         this.filter = (filter != null) ? Optional.of((Filter)filter) : Optional.<Filter>absent();
     }
 
+    public void setInterval(int interval) {
+        this.interval = interval;
+    }
+
     @Override
     public String toString() {
         return "Collector [jvm=" + jvm + ", carbonHost=" + carbonHost + ", carbonPort=" + carbonPort + ", instanceName="
-                + instanceName + ", filter=" + filter + ", status=" + status + "]";
+                + instanceName + ", filter=" + filter + ", interval=" + interval + ", status=" + status + "]";
     }
 
     private static String prefix(String id) {
