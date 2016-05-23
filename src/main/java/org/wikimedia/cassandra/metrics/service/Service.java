@@ -111,7 +111,7 @@ public class Service {
                 .build();
         
         // Setup discovery.
-        
+
         // The discovery job periodically looks for new instances, and schedules
         // recurring collection tasks for any it finds.
         JobDataMap discoverMap = new JobDataMap();
@@ -140,7 +140,8 @@ public class Service {
         statsMap.put("carbonHost", carbonHost);
         statsMap.put("carbonPort", carbonPort);
         statsMap.put("stats", stats);
-        
+        statsMap.put("interval", interval);
+
         JobDetail statsJob = newJob(StatsReporter.class)
                 .withIdentity("reporterJob", "reportGroup")
                 .usingJobData(statsMap)

@@ -14,6 +14,8 @@
  */
 package org.wikimedia.cassandra.metrics.service;
 
+import java.util.concurrent.Callable;
+
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -31,17 +33,25 @@ public class StatsReporter implements Job {
     private Stats stats;
     private String carbonHost;
     private int carbonPort;
+    private int interval;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         LOG.debug("Connecting to {}:{}", this.carbonHost, this.carbonPort);
 
-        try (CarbonConnector carbon = new CarbonConnector(this.carbonHost, this.carbonPort)) {
+        try (final CarbonConnector carbon = new CarbonConnector(this.carbonHost, this.carbonPort)) {
             LOG.info("Writing internal stats");
-            for (String instance : this.stats.getNames()) {
-                carbon.write(String.format(FAILURE, instance),  this.stats.getFailures(instance));
-                carbon.write(String.format(SUCCESS, instance), this.stats.getSuccesses(instance));    
-            }
+
+            new TimedTask<Void>(Math.min(interval, 60)).submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    for (String instance : stats.getNames()) {
+                        carbon.write(String.format(FAILURE, instance), stats.getFailures(instance));
+                        carbon.write(String.format(SUCCESS, instance), stats.getSuccesses(instance));
+                    }
+                    return null;
+                }
+            });
         }
         catch (Throwable e) {
             LOG.error("Unable to report internal stats", e);
@@ -58,6 +68,10 @@ public class StatsReporter implements Job {
 
     public void setCarbonPort(int carbonPort) {
         this.carbonPort = carbonPort;
+    }
+
+    public void setInterval(int interval) {
+        this.interval = interval;
     }
 
 }
