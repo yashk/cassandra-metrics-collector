@@ -285,6 +285,7 @@ public class JmxCollector implements AutoCloseable {
     /* TODO: Ideally, the "interesting" criteria should be configurable. */
     private static Set<String> interestingTypes = Sets.newHashSet(
             "Cache",
+            "Client",
             "ClientRequest",
             "ColumnFamily",
             "Connection",
@@ -293,6 +294,7 @@ public class JmxCollector implements AutoCloseable {
             "FileCache",
             "IndexColumnFamily",
             "Storage",
+            "Keyspace",
             "ThreadPools",
             "Compaction",
             "ReadRepair",
