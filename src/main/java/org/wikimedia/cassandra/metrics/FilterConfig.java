@@ -22,7 +22,7 @@ public class FilterConfig {
     private Collection<String> whitelist;
 
     public Collection<String> getBlacklist() {
-        return (blacklist != null) ? blacklist : Collections.emptyList();
+        return (blacklist != null) ? blacklist : Collections.<String>emptyList();
     }
 
     public void setBlacklist(Collection<String> blacklist) {
@@ -30,7 +30,7 @@ public class FilterConfig {
     }
 
     public Collection<String> getWhitelist() {
-        return (whitelist != null) ? whitelist : Collections.emptyList();
+        return (whitelist != null) ? whitelist : Collections.<String>emptyList();
     }
 
     public void setWhitelist(Collection<String> whitelist) {
