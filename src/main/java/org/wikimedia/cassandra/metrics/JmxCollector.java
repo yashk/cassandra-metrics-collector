@@ -301,6 +301,10 @@ public class JmxCollector implements AutoCloseable {
 
     /* XXX: This is a hot mess. */
     private boolean interesting(ObjectName objName) {
+        if (objName.getKeyProperty("name").equals("ColUpdateTimeDeltaHistogram")) {
+            return false;
+        }
+
         if (blacklist.contains(objName))
             return false;
 
