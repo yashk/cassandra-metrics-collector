@@ -25,8 +25,8 @@ import org.wikimedia.cassandra.metrics.CarbonConnector;
 
 public class StatsReporter implements Job {
 
-    private static final String SUCCESS = "cmcd.instances.%s.success";
-    private static final String FAILURE = "cmcd.instances.%s.failure";
+    private static final String SUCCESS = "%s.cassandra.metricscollect.success";
+    private static final String FAILURE = "%s.cassandra.metricscollect.failure";
 
     private static final Logger LOG = LoggerFactory.getLogger(StatsReporter.class);
 
@@ -34,6 +34,7 @@ public class StatsReporter implements Job {
     private String carbonHost;
     private int carbonPort;
     private int interval;
+
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -73,5 +74,6 @@ public class StatsReporter implements Job {
     public void setInterval(int interval) {
         this.interval = interval;
     }
+
 
 }

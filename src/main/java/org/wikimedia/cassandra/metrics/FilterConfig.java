@@ -14,18 +14,23 @@
  */
 package org.wikimedia.cassandra.metrics;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
+@ConfigurationProperties(prefix="config.filterConfig")
 public class FilterConfig {
-    private Collection<String> blacklist;
-    private Collection<String> whitelist;
+    private List<String> whitelist = new ArrayList<>();
+    private List<String> blacklist = new ArrayList<>();
 
-    public Collection<String> getBlacklist() {
+    public List<String> getBlacklist() {
         return (blacklist != null) ? blacklist : Collections.<String>emptyList();
     }
 
-    public void setBlacklist(Collection<String> blacklist) {
+    public void setBlacklist(List<String> blacklist) {
         this.blacklist = blacklist;
     }
 
@@ -33,7 +38,7 @@ public class FilterConfig {
         return (whitelist != null) ? whitelist : Collections.<String>emptyList();
     }
 
-    public void setWhitelist(Collection<String> whitelist) {
+    public void setWhitelist(List<String> whitelist) {
         this.whitelist = whitelist;
     }
 

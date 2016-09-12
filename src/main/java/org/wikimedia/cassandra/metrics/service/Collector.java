@@ -82,8 +82,13 @@ public class Collector implements Job {
         }
         catch (IOException e) {
             LOG.error("JMX collection error", e);
+            this.status = FAILURE;
+            return;
+        } catch (Throwable t){
+            LOG.error("JMX collection error", t);
             this.status = ERROR;
             return;
+
         }
 
         LOG.info("Collection of {} complete; Samples written to {}:{}", this.instanceName, this.carbonHost, this.carbonPort);
@@ -134,7 +139,7 @@ public class Collector implements Job {
     }
 
     private static String prefix(String id) {
-        return String.format("%s.%s", Service.PREFIX_PREFIX, id);
+        return String.format("%s.%s", id,Service.PREFIX_PREFIX);
     }
 
 }

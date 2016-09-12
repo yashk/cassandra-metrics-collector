@@ -1,0 +1,25 @@
+config:
+  interval: 20
+
+  jmx:
+    host: localhost
+    port: 7100
+
+  carbon:
+    host: localhost
+    port: 2008
+    prefix: localhost
+
+  filterConfig:
+    whitelist:
+     - .*\.jvm\..*
+     - .*\.org\.apache\.cassandra\.metrics\.Cache.+
+     - .*\.org\.apache\.cassandra\.metrics\.ClientRequest.+
+     - .*\.org\.apache\.cassandra\.metrics\.CommitLog.+
+     - .*\.org\.apache\.cassandra\.metrics\.Compaction.+
+     - .*\.org\.apache\.cassandra\.metrics\.DroppedMetrics.+
+     - .*\.org\.apache\.cassandra\.metrics\.ReadRepair.+
+     - .*\.org\.apache\.cassandra\.metrics\.Storage.+
+     - .*\.org\.apache\.cassandra\.metrics\.ThreadPools.+
+    blacklist:
+      - .+
